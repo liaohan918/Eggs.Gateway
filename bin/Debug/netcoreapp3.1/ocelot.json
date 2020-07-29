@@ -1,0 +1,73 @@
+{
+  "GlobalConfiguration": {
+    "BaseUrl": "http://192.168.50.1:9070",
+    "ServiceDiscoveryProvider": { //Consul服务注册中心地址
+      "Scheme": "http",
+      "Host": "127.0.0.1",
+      "Port": 8500,
+      "Type": "Consul"
+    },
+    "RateLimitOptions": { //达到限流时返回的信息
+      "DisableRateLimitHeaders": false,
+      "QuotaExceededMessage": "too many requests...",
+      "HttpStatusCode": 999,
+      "ClientIdHeader": "Test"
+    }
+  },
+  "Routes": [
+    // Eggs.IdentityServer路由
+    {
+      "DownstreamPathTemplate": "/{url}",
+      "DownstreamScheme": "http",
+      "ServiceName": "BlogIdentityServer", //认证与授权中心
+      "UpstreamPathTemplate": "/{url}", //因为目前IdentityServer中的页面都没有进行前后端分离，访问静态资源的地址都是相对当前访问路径，没有经过网关
+      "UpstreamHttpMethod": [ "Get", "Post", "Put", "Delete" ],
+      "LoadBalancerOptions": {
+        "Type": "RoundRobin"
+      }
+    },
+    //系统管理服务Api + 博客管理Api
+    {
+      "DownstreamPathTemplate": "/api/{url}",
+      "DownstreamScheme": "http",
+      "ServiceName": "BlogCoreService",
+      "UpstreamPathTemplate": "/api/{url}",
+      "UpstreamHttpMethod": [ "Get", "Post", "Put", "Delete" ],
+      "LoadBalancerOptions": {
+        "Type": "RoundRobin" //负载均衡，轮询机制 LeastConnection/RoundRobin/NoLoadBalancer/CookieStickySessions
+      },
+      //缓存、限流、超时和熔断的配置
+      //"FileCacheOptions": { //缓存
+      //  "TtlSeconds": 5,
+      //  "Region": "regionname"
+      //},
+      //"RateLimitOptions": { //限流
+      //  "ClientWhitelist": [ "SuperClient" ],
+      //  "EnableRateLimiting": false,
+      //  "Period": "5s",
+      //  "PeriodTimespan": 2,
+      //  "Limit": 100
+      //},
+      //"QoSOptions": { //超时和熔断
+      //  "ExceptionsAllowedBeforeBreaking": 3,
+      //  "DurationOfBreak": 10000,
+      //  "TimeoutValue": 5000
+      //},
+      //"AuthenticationOptions": { //身份认证,依赖Eggs.IdentityServer服务
+      //  "AuthenticationProviderKey": "blog.core.api",
+      //  "AllowScopes": []
+      //}
+    },
+    //系统api的swagger路由
+    {
+      "DownstreamPathTemplate": "/swagger/v1/swagger.json",
+      "DownstreamScheme": "http",
+      "UpstreamPathTemplate": "/api/admin/swagger/v1/swagger.json",
+      "UpstreamHttpMethod": [ "Get", "Post", "Put", "Delete" ],
+      "ServiceName": "BlogCoreService",
+      "LoadBalancerOptions": {
+        "Type": "RoundRobin"
+      }
+    }
+  ]
+}
